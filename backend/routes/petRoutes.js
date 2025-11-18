@@ -1,21 +1,29 @@
+// routes/petRoutes.js
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const { addPet, getAllPets } = require("../controllers/petController");
+const {
+  addPet,
+  updatePet,
+  getAllPets,
+  getPetsByOwner,
+} = require("../controllers/petController");
 
-// Cấu hình multer lưu ảnh vào folder 'uploads'
+// Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// Thêm pet (1 ảnh)
+// Thêm pet
 router.post("/", upload.single("image"), addPet);
 
-// Lấy tất cả pet
+// Cập nhật pet (PUT cũng nhận file)
+router.put("/:id", upload.single("image"), updatePet);
+
+// Lấy pet
 router.get("/", getAllPets);
+router.get("/owner/:ownerId", getPetsByOwner);
 
 module.exports = router;

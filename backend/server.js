@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const petRoutes = require("./routes/petRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const serviceRoutes = require("./routes/serviceRoutes");
 const path = require("path");
 
 dotenv.config();
@@ -20,9 +21,10 @@ connectDB();
 
 // Route auth
 app.use("/auth", authRoutes);
-app.use("/api/pets", petRoutes);
-app.use("/appointments", appointmentRoutes);
+app.use("/api/appointments", appointmentRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/pets", petRoutes);
+app.use("/api/services", serviceRoutes);
 
 // Route thử nghiệm
 app.get("/", (req, res) => {
