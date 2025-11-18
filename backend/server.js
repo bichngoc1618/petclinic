@@ -2,6 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
+const authRoutes = require("./routes/auth");
+const petRoutes = require("./routes/petRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
+const path = require("path");
 
 dotenv.config();
 
@@ -13,6 +17,12 @@ app.use(express.json());
 
 // Kết nối MongoDB
 connectDB();
+
+// Route auth
+app.use("/auth", authRoutes);
+app.use("/api/pets", petRoutes);
+app.use("/appointments", appointmentRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Route thử nghiệm
 app.get("/", (req, res) => {
