@@ -27,7 +27,7 @@ export default function PetListScreen() {
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const API_URL = "http://192.168.5.91:5000/api/pets";
+  const API_URL = "http://192.168.5.46:5000/api/pets";
 
   useEffect(() => {
     if (user?.id) fetchPets();
@@ -53,11 +53,21 @@ export default function PetListScreen() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    console.log("Deleting pet ID:", deleteTarget._id); // Debug
     try {
       const res = await fetch(`${API_URL}/${deleteTarget._id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      if (!res.ok) throw new Error("delete failed");
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => null);
+        throw new Error(errText || "delete failed");
+      }
+
+      // Update state local
       setPets((prev) => prev.filter((p) => p._id !== deleteTarget._id));
     } catch (err) {
       console.error("delete error:", err);
@@ -173,13 +183,11 @@ export default function PetListScreen() {
       />
 
       {/* Detail Modal */}
-      {/* Detail Modal */}
       <Modal visible={!!detailPet} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.detailContent}>
             {detailPet && (
               <>
-                {/* Hình thú cưng */}
                 {detailPet.image ? (
                   <Image
                     source={{
@@ -197,7 +205,6 @@ export default function PetListScreen() {
                   </View>
                 )}
 
-                {/* Thông tin thú cưng */}
                 <Text style={styles.detailTitle}>{detailPet.name}</Text>
                 <Text style={styles.detailText}>Loài: {detailPet.species}</Text>
                 <Text style={styles.detailText}>
@@ -208,7 +215,6 @@ export default function PetListScreen() {
                   Giới tính: {detailPet.gender === "male" ? "Đực" : "Cái"}
                 </Text>
 
-                {/* Hành động */}
                 <View
                   style={{ flexDirection: "row", marginTop: 16, width: "100%" }}
                 >

@@ -1,18 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const {
-  getAppointmentsByOwner,
-  getAllAppointments,
-  createAppointment,
-} = require("../controllers/appointmentController");
+const apm = require("../controllers/appointmentController"); // import controller
 
 // Lấy tất cả lịch
-router.get("/", getAllAppointments);
+router.get("/", apm.getAllAppointments);
 
 // Lấy lịch theo owner
-router.get("/owner/:ownerId", getAppointmentsByOwner);
+router.get("/owner/:ownerId", apm.getAppointmentsByOwner);
 
 // Tạo lịch mới
-router.post("/", createAppointment);
+router.post("/", apm.createAppointment);
+
+// Huỷ lịch hẹn
+router.put("/:id/cancel", apm.cancelAppointment);
 
 module.exports = router;

@@ -55,7 +55,8 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-      const userData = res.data.user;
+      const userData = { ...res.data.user, token: res.data.token };
+
       setUser(userData);
       await AsyncStorage.setItem("user", JSON.stringify(userData));
       setLoading(false);

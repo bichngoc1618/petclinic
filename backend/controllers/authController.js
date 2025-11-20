@@ -2,6 +2,8 @@ const User = require("../models/users");
 const Role = require("../models/role");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
@@ -10,19 +12,15 @@ const register = async (req, res) => {
   try {
     const { name, email, password, roleName } = req.body;
 
-    // Kiểm tra email đã tồn tại
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ message: "Email đã được sử dụng" });
 
-    // Kiểm tra role hợp lệ
     const role = await Role.findOne({ name: roleName });
     if (!role) return res.status(400).json({ message: "Role không hợp lệ" });
 
-    // Mã hóa password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo user mới
     const user = new User({
       name,
       email,
@@ -32,7 +30,6 @@ const register = async (req, res) => {
 
     await user.save();
 
-    // Tạo JWT
     const token = jwt.sign(
       { id: user._id, email: user.email, role: role.name },
       JWT_SECRET,
@@ -79,6 +76,8 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role.name,
         avatar: user.avatar,
+        phone: user.phone,
+        address: user.address,
       },
       token,
     });
@@ -88,4 +87,48 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// ===================== Cập nhật profile =====================
+const updateUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+
+    const { name, phone, address } = req.body;
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    // Xử lý avatar
+    if (req.file) {
+      if (user.avatar) {
+        const oldPath = path.join(__dirname, "../uploads", user.avatar);
+        fs.unlink(oldPath, (err) => {
+          if (err) console.log("Xoá avatar cũ thất bại:", err);
+        });
+      }
+      user.avatar = req.file.filename;
+    }
+
+    await user.save();
+    res.status(200).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ===================== Lấy user hiện tại =====================
+const getMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+    res.status(200).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { register, login, updateUser, getMe };

@@ -10,7 +10,7 @@ const AppointmentSchema = new mongoose.Schema({
   doctor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   status: {
     type: String,
-    enum: ["pending", "treating", "completed"],
+    enum: ["pending", "treating", "completed", "cancelled"], // ✅ thêm "cancelled"
     default: "pending",
   },
   note: { type: String },

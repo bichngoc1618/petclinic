@@ -1,6 +1,8 @@
+// styles/HomeOwner.js
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
+  /* Container */
   container: {
     flex: 1,
     backgroundColor: "#e3f2fd",
@@ -50,7 +52,6 @@ export default StyleSheet.create({
   },
 
   /* Banner */
-  /* Banner */
   bannerContainer: {
     height: 200,
     backgroundColor: "#dcedfcff",
@@ -66,14 +67,13 @@ export default StyleSheet.create({
     elevation: 6,
     position: "relative",
   },
-
   bannerImage: {
     width: 260,
     height: 260,
     position: "absolute",
     top: -90,
     left: "50%",
-    marginLeft: -130, // trừ 1/2 width để căn giữa
+    marginLeft: -130,
     zIndex: 2,
     resizeMode: "contain",
     transform: [{ rotate: "-5deg" }],
@@ -83,12 +83,10 @@ export default StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-
   bannerTextBox: {
     alignItems: "center",
     zIndex: 3,
   },
-
   bannerTitle: {
     fontSize: 22,
     fontWeight: "800",
@@ -96,14 +94,12 @@ export default StyleSheet.create({
     marginBottom: 6,
     textAlign: "center",
   },
-
   bannerSlogan: {
     fontSize: 14,
     color: "#0d47a1",
     marginBottom: 12,
     textAlign: "center",
   },
-
   bookButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -115,7 +111,6 @@ export default StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-
   bookButtonText: {
     color: "#0d47a1",
     fontWeight: "700",
@@ -141,8 +136,16 @@ export default StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-  cardIcon: { fontSize: 22, marginBottom: 6, color: "#1976D2" },
-  cardNumber: { fontSize: 22, fontWeight: "800", color: "#1976D2" },
+  cardIcon: {
+    fontSize: 22,
+    marginBottom: 6,
+    color: "#1976D2",
+  },
+  cardNumber: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1976D2",
+  },
   cardLabel: {
     fontSize: 14,
     fontWeight: "700",
@@ -151,7 +154,6 @@ export default StyleSheet.create({
   },
 
   /* Appointments */
-  /* Appointments - Updated */
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -169,39 +171,27 @@ export default StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-
   appointmentRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
-
   appointmentPet: {
     fontWeight: "700",
     fontSize: 17,
     color: "#0d47a1",
   },
-
   appointmentType: {
     color: "#1976D2",
     fontSize: 14,
     marginTop: 2,
   },
-
   appointmentDate: {
     color: "#555",
     fontSize: 13,
     marginTop: 2,
   },
-
-  appointmentNote: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-
   status: {
     fontWeight: "700",
     fontSize: 12,
@@ -211,15 +201,12 @@ export default StyleSheet.create({
     color: "#fff",
     textAlign: "center",
   },
-
   statusCompleted: { backgroundColor: "#4caf50" },
   statusTreating: { backgroundColor: "#2196f3" },
   statusWaiting: { backgroundColor: "#ff9800" },
+  statusCancelled: { backgroundColor: "#f44336" },
 
   /* Services */
-  servicesContainer: {
-    marginVertical: 20,
-  },
   servicesTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -287,5 +274,41 @@ export default StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  /* Modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "85%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 16,
+    textAlign: "center",
+    color: "#1976D2",
+  },
+  modalLabel: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#333",
+  },
+  cancelButton: {
+    backgroundColor: "#1976D2",
+    paddingVertical: 10,
+    borderRadius: 12,
   },
 });

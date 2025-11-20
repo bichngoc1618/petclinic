@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const Pet = require("../models/pet");
 const fs = require("fs");
 const path = require("path");
@@ -43,7 +42,7 @@ exports.getPetsByOwner = async (req, res) => {
   }
 };
 
-// Lấy chi tiết 1 thú cưng theo petId
+// Lấy chi tiết 1 thú cưng
 exports.getPetById = async (req, res) => {
   try {
     const pet = await Pet.findById(req.params.id);
@@ -65,7 +64,6 @@ exports.updatePet = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thú cưng" });
 
     const { name, species, breed, age, gender } = req.body;
-
     if (name) pet.name = name;
     if (species) pet.species = species;
     if (breed) pet.breed = breed;
@@ -74,12 +72,13 @@ exports.updatePet = async (req, res) => {
 
     // Xử lý ảnh mới
     if (req.file) {
-      // Xoá ảnh cũ nếu có
       if (pet.image) {
         const oldPath = path.join(__dirname, "../uploads", pet.image);
-        fs.unlink(oldPath, (err) => {
-          if (err) console.log("Xoá ảnh cũ thất bại:", err);
-        });
+        try {
+          await fs.promises.unlink(oldPath);
+        } catch (err) {
+          console.log("Xoá ảnh cũ thất bại:", err);
+        }
       }
       pet.image = req.file.filename;
     }
@@ -103,9 +102,11 @@ exports.deletePet = async (req, res) => {
     // Xoá ảnh nếu có
     if (pet.image) {
       const filePath = path.join(__dirname, "../uploads", pet.image);
-      fs.unlink(filePath, (err) => {
-        if (err) console.log("Xoá ảnh thất bại:", err);
-      });
+      try {
+        await fs.promises.unlink(filePath);
+      } catch (err) {
+        console.log("Xoá ảnh thất bại:", err);
+      }
     }
 
     await pet.deleteOne();

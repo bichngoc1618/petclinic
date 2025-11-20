@@ -31,7 +31,7 @@ export default function BookingPopup({
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showAddPet, setShowAddPet] = useState(false);
 
-  const SERVER = "http://192.168.5.91:5000";
+  const SERVER = "http://192.168.5.46:5000";
 
   // --- Lấy danh sách service từ backend khi popup mở ---
   useEffect(() => {
