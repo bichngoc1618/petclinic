@@ -102,3 +102,28 @@ exports.cancelAppointment = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+// Giao task cho bác sĩ và đổi trạng thái sang 'treating'
+exports.assignDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment)
+      return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
+
+    appointment.doctor = doctorId;
+    appointment.status = "treating"; // Chờ khám
+    await appointment.save();
+
+    const populated = await Appointment.findById(appointment._id)
+      .populate({ path: "pets", select: "name species owner" })
+      .populate("doctor", "name")
+      .populate("services", "name icon")
+      .populate("owner", "name phone");
+
+    res.json(populated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

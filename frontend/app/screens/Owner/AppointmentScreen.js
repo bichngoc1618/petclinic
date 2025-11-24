@@ -1,4 +1,3 @@
-// screens/Owner/AppointmentScreen.js
 import React, { useEffect, useState, useContext } from "react";
 import {
   View,
@@ -8,18 +7,19 @@ import {
   ActivityIndicator,
   Modal,
   TouchableWithoutFeedback,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../../context/AuthContext";
 import BookingPopup from "./bookingPopup";
-import axios from "axios";
+import axiosClient from "../../api/axiosClient";
 import styles from "../../styles/AppointmentOwner";
 
 export default function AppointmentScreen() {
-  const { user } = useContext(AuthContext);
+  const { user, initializing } = useContext(AuthContext);
   const [appointments, setAppointments] = useState([]);
   const [pets, setPets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("PENDING");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [confirmCancelVisible, setConfirmCancelVisible] = useState(false);
@@ -27,35 +27,36 @@ export default function AppointmentScreen() {
   const [showBooking, setShowBooking] = useState(false);
 
   const statuses = ["PENDING", "TREATING", "COMPLETED", "CANCELLED"];
-  const SERVER = "http://192.168.5.46:5000";
 
-  // --- Fetch appointments & pets
+  useEffect(() => {
+    if (initializing || !user?._id) return;
+    fetchAppointments();
+  }, [initializing, user]);
+
   const fetchAppointments = async () => {
-    if (!user || !user.id) return;
+    setLoading(true);
     try {
-      setLoading(true);
       const [apmRes, petRes] = await Promise.all([
-        axios.get(`${SERVER}/api/appointments/owner/${user.id}`),
-        axios.get(`${SERVER}/api/pets/owner/${user.id}`),
+        axiosClient.get(`/api/appointments/owner/${user._id}`),
+        axiosClient.get(`/api/pets/owner/${user._id}`),
       ]);
-      setAppointments(apmRes.data ?? []);
-      setPets(petRes.data ?? []);
-    } catch (error) {
-      console.log("Fetch error:", error);
+      setAppointments(apmRes.data?.data || apmRes.data || []);
+      setPets(petRes.data?.data || petRes.data || []);
+    } catch (err) {
+      console.error(
+        "❌ fetchAppointments error:",
+        err.response?.data || err.message
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAppointments();
-  }, [user]);
-
   const filteredAppointments =
     selectedStatus === "ALL"
       ? appointments
       : appointments.filter(
-          (app) => app.status.toUpperCase() === selectedStatus
+          (app) => app.status?.toUpperCase() === selectedStatus
         );
 
   const openBookingPopup = () => setShowBooking(true);
@@ -68,24 +69,29 @@ export default function AppointmentScreen() {
 
   const handleConfirmCancel = async () => {
     if (!appointmentToCancel) return;
+
+    setLoading(true);
     try {
-      // Huỷ trên server
-      await axios.put(
-        `${SERVER}/api/appointments/${appointmentToCancel._id}/cancel`
+      await axiosClient.put(
+        `/api/appointments/${appointmentToCancel._id}/cancel`
       );
 
-      // Cập nhật state local
       setAppointments((prev) =>
         prev.map((a) =>
           a._id === appointmentToCancel._id ? { ...a, status: "CANCELLED" } : a
         )
       );
-    } catch (error) {
-      console.log("Cancel error:", error);
-    } finally {
+
       setConfirmCancelVisible(false);
       setAppointmentToCancel(null);
       setSelectedAppointment(null);
+
+      Alert.alert("Thành công", "Lịch hẹn đã được huỷ!");
+    } catch (err) {
+      console.error("❌ Cancel error:", err.response?.data || err.message);
+      Alert.alert("Lỗi", err.response?.data?.message || "Huỷ lịch thất bại");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -180,9 +186,9 @@ export default function AppointmentScreen() {
               style={styles.timelineCard}
               onPress={() => setSelectedAppointment(app)}
             >
-              <Text style={styles.timeLabel}>
-                {`${startHour}:00 - ${endHour}:00`}
-              </Text>
+              <Text
+                style={styles.timeLabel}
+              >{`${startHour}:00 - ${endHour}:00`}</Text>
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineTitle}>
                   📅 {appDate.toLocaleDateString()}
@@ -197,117 +203,42 @@ export default function AppointmentScreen() {
       </ScrollView>
 
       {/* Detail Modal */}
-      {/* Detail Modal */}
       {selectedAppointment && (
-        <Modal visible transparent animationType="fade">
+        <Modal visible transparent animationType="slide">
           <TouchableWithoutFeedback
             onPress={() => setSelectedAppointment(null)}
           >
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <TouchableWithoutFeedback>
-                <View style={[styles.modalContent, { width: "90%" }]}>
-                  <Text style={styles.modalTitle}>Chi tiết lịch hẹn</Text>
-                  <Text style={styles.modalLabel}>
-                    📅 Ngày giờ:{" "}
-                    {new Date(selectedAppointment.date).toLocaleString()}
-                  </Text>
-                  <Text style={styles.modalLabel}>
-                    🐶 Thú cưng:{" "}
-                    {(selectedAppointment.pets ?? [])
-                      .map((p) => p.name)
-                      .join(", ")}
-                  </Text>
-                  <Text style={styles.modalLabel}>
-                    🧰 Dịch vụ:{" "}
-                    {(selectedAppointment.services ?? [])
-                      .map((s) => s.name)
-                      .join(", ")}
-                  </Text>
-                  <Text style={styles.modalLabel}>
-                    🔖 Trạng thái: {statusLabel(selectedAppointment.status)}
-                  </Text>
+            <View style={styles.overlay}>
+              <View style={[styles.popup, { width: "90%" }]}>
+                <Text style={styles.title}>Chi tiết lịch hẹn</Text>
+                <Text style={styles.modalLabel}>
+                  📅 Ngày giờ:{" "}
+                  {new Date(selectedAppointment.date).toLocaleString()}
+                </Text>
+                <Text style={styles.modalLabel}>
+                  🐶 Thú cưng:{" "}
+                  {(selectedAppointment.pets ?? [])
+                    .map((p) => p.name)
+                    .join(", ")}
+                </Text>
+                <Text style={styles.modalLabel}>
+                  🧰 Dịch vụ:{" "}
+                  {(selectedAppointment.services ?? [])
+                    .map((s) => s.name)
+                    .join(", ")}
+                </Text>
+                <Text style={styles.modalLabel}>
+                  🔖 Trạng thái: {statusLabel(selectedAppointment.status)}
+                </Text>
 
-                  <View style={{ flexDirection: "row", marginTop: 20 }}>
-                    {/* Chỉ hiện nút Huỷ nếu chưa huỷ */}
-                    {selectedAppointment.status !== "CANCELLED" && (
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelButton,
-                          {
-                            flex: 1,
-                            marginRight: 8,
-                            backgroundColor: "#FF4D4F",
-                          },
-                        ]}
-                        onPress={() => openConfirmCancel(selectedAppointment)}
-                      >
-                        <Text
-                          style={{
-                            color: "#fff",
-                            fontWeight: "700",
-                            textAlign: "center",
-                          }}
-                        >
-                          Huỷ lịch
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={[styles.cancelButton, { flex: 1 }]}
-                      onPress={() => setSelectedAppointment(null)}
-                    >
-                      <Text style={{ fontWeight: "700", textAlign: "center" }}>
-                        Đóng
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      )}
-
-      {/* Confirm Cancel Modal */}
-      {confirmCancelVisible && appointmentToCancel && (
-        <Modal visible transparent animationType="fade">
-          <TouchableWithoutFeedback
-            onPress={() => setConfirmCancelVisible(false)}
-          >
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <TouchableWithoutFeedback>
-                <View style={[styles.modalContent, { width: "80%" }]}>
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: "700",
-                      marginBottom: 20,
-                      textAlign: "center",
-                    }}
-                  >
-                    Xác nhận huỷ lịch hẹn?
-                  </Text>
-                  <View style={{ flexDirection: "row" }}>
+                <View style={{ flexDirection: "row", marginTop: 20 }}>
+                  {selectedAppointment.status !== "CANCELLED" && (
                     <TouchableOpacity
                       style={[
-                        styles.cancelButton,
+                        styles.cancelBtn,
                         { flex: 1, marginRight: 8, backgroundColor: "#FF4D4F" },
                       ]}
-                      onPress={handleConfirmCancel}
+                      onPress={() => openConfirmCancel(selectedAppointment)}
                     >
                       <Text
                         style={{
@@ -316,20 +247,62 @@ export default function AppointmentScreen() {
                           textAlign: "center",
                         }}
                       >
-                        Xác nhận
+                        Huỷ lịch
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.cancelButton, { flex: 1 }]}
-                      onPress={() => setConfirmCancelVisible(false)}
-                    >
-                      <Text style={{ fontWeight: "700", textAlign: "center" }}>
-                        Hủy
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { flex: 1 }]}
+                    onPress={() => setSelectedAppointment(null)}
+                  >
+                    <Text style={{ fontWeight: "700", textAlign: "center" }}>
+                      Đóng
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableWithoutFeedback>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {/* Confirm Cancel Modal */}
+      {confirmCancelVisible && appointmentToCancel && (
+        <Modal visible transparent animationType="slide">
+          <TouchableWithoutFeedback
+            onPress={() => setConfirmCancelVisible(false)}
+          >
+            <View style={styles.overlay}>
+              <View style={[styles.popup, { width: "80%" }]}>
+                <Text style={styles.title}>Xác nhận huỷ lịch hẹn?</Text>
+                <View style={{ flexDirection: "row", marginTop: 20 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelBtn,
+                      { flex: 1, marginRight: 8, backgroundColor: "#FF4D4F" },
+                    ]}
+                    onPress={handleConfirmCancel}
+                  >
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontWeight: "700",
+                        textAlign: "center",
+                      }}
+                    >
+                      Xác nhận
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { flex: 1 }]}
+                    onPress={() => setConfirmCancelVisible(false)}
+                  >
+                    <Text style={{ fontWeight: "700", textAlign: "center" }}>
+                      Hủy
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </Modal>
@@ -343,7 +316,7 @@ export default function AppointmentScreen() {
         selectedService={null}
         onClose={() => {
           closeBookingPopup();
-          fetchAppointments();
+          fetchAppointments(); // refresh after booking
         }}
         setAppointments={setAppointments}
       />

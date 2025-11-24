@@ -8,9 +8,10 @@ const authMiddleware = (roles = []) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
+      console.log("Decoded token:", decoded); // ✅ đây là chỗ bạn cần
       req.user = decoded;
 
-      // Nếu roles được truyền vào, kiểm tra quyền
+      // Kiểm tra role nếu có
       if (roles.length && !roles.includes(decoded.role)) {
         return res.status(403).json({ message: "Không có quyền truy cập" });
       }

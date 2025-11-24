@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../../context/AuthContext";
@@ -27,25 +28,31 @@ export default function PetListScreen() {
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const API_URL = "http://192.168.5.46:5000/api/pets";
+  const API_BASE = "http://192.168.5.46:5000";
 
+  // --- Fetch pets ---
   useEffect(() => {
-    if (user?.id) fetchPets();
-  }, [user]);
+    if (!user?._id) return;
+    fetchPets();
+  }, [user?._id]);
 
   const fetchPets = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/owner/${user.id}`);
+      const res = await fetch(`${API_BASE}/api/pets/owner/${user._id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setPets(data);
+      setPets(data || []);
     } catch (err) {
       console.error("fetchPets error:", err);
+      Alert.alert("Lỗi", "Không thể tải danh sách thú cưng.");
+      setPets([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Delete pet ---
   const confirmDeletePet = (pet) => {
     setDeleteTarget(pet);
     setShowDeletePopup(true);
@@ -53,30 +60,23 @@ export default function PetListScreen() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    console.log("Deleting pet ID:", deleteTarget._id); // Debug
     try {
-      const res = await fetch(`${API_URL}/${deleteTarget._id}`, {
+      const res = await fetch(`${API_BASE}/api/pets/${deleteTarget._id}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => null);
-        throw new Error(errText || "delete failed");
-      }
-
-      // Update state local
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setPets((prev) => prev.filter((p) => p._id !== deleteTarget._id));
     } catch (err) {
       console.error("delete error:", err);
+      Alert.alert("Lỗi", "Không thể xoá thú cưng.");
     } finally {
       setShowDeletePopup(false);
       setDeleteTarget(null);
     }
   };
 
+  // --- Add / Edit handlers ---
   const onAddPet = (newPet) => {
     if (!newPet) return;
     setPets((prev) => [newPet, ...prev]);
@@ -91,6 +91,7 @@ export default function PetListScreen() {
     setEditingPet(null);
   };
 
+  // --- Render pet item ---
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.petCard}
@@ -99,9 +100,7 @@ export default function PetListScreen() {
     >
       {item.image ? (
         <Image
-          source={{
-            uri: `${API_URL.replace("/api/pets", "")}/uploads/${item.image}`,
-          }}
+          source={{ uri: `${API_BASE}/uploads/${item.image}` }}
           style={styles.petImage}
         />
       ) : (
@@ -148,6 +147,7 @@ export default function PetListScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Pet list */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -172,14 +172,14 @@ export default function PetListScreen() {
         visible={showAddPopup}
         onClose={() => setShowAddPopup(false)}
         onAddPet={onAddPet}
-        apiBase={API_URL.replace("/api/pets", "")}
+        apiBase={API_BASE}
       />
       <EditPetPopup
         visible={!!editingPet}
         pet={editingPet}
         onClose={() => setEditingPet(null)}
         onSave={onSavePet}
-        apiBase={API_URL.replace("/api/pets", "")}
+        apiBase={API_BASE}
       />
 
       {/* Detail Modal */}
@@ -190,11 +190,7 @@ export default function PetListScreen() {
               <>
                 {detailPet.image ? (
                   <Image
-                    source={{
-                      uri: `${API_URL.replace("/api/pets", "")}/uploads/${
-                        detailPet.image
-                      }`,
-                    }}
+                    source={{ uri: `${API_BASE}/uploads/${detailPet.image}` }}
                     style={styles.detailImage}
                   />
                 ) : (

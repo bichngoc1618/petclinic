@@ -1,11 +1,10 @@
-// styles/HomeOwner.js
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
   /* Container */
   container: {
     flex: 1,
-    backgroundColor: "#f2f3f7",
+    backgroundColor: "#ecf7ffff",
     padding: 16,
   },
 
@@ -16,7 +15,7 @@ export default StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  greeting: {
+  pageTitle: {
     fontSize: 22,
     fontWeight: "700",
     color: "#2c3e50",
@@ -56,7 +55,9 @@ export default StyleSheet.create({
     height: 200,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 16,
+    position: "relative",
+    zIndex: -10,
+    marginVertical: 20,
   },
   bannerCard: {
     width: "100%",
@@ -65,7 +66,7 @@ export default StyleSheet.create({
     backgroundColor: "#dcedfc",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
     justifyContent: "center",
@@ -90,22 +91,6 @@ export default StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
-  bookButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  bookButtonText: {
-    color: "#0d47a1",
-    fontWeight: "700",
-    fontSize: 14,
-  },
   petImage: {
     width: 300,
     height: 300,
@@ -122,7 +107,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginVertical: 12,
+    marginBottom: 12,
   },
   card: {
     width: "48%",
@@ -152,16 +137,31 @@ export default StyleSheet.create({
     fontWeight: "600",
     color: "#2c3e50",
     marginTop: 4,
-    textAlign: "center",
   },
 
-  /* Section Titles */
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2c3e50",
-    marginBottom: 12,
+  /* Search + Filter */
+  searchFilterContainer: { marginVertical: 12 },
+  searchInput: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginBottom: 8,
   },
+  filterButtons: { flexDirection: "row", marginBottom: 10 },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  filterButtonActive: { backgroundColor: "#3498db", borderColor: "#3498db" },
+  filterButtonText: { fontSize: 12, color: "#333" },
+  filterButtonTextActive: { color: "#fff" },
 
   /* Appointments */
   appointmentCard: {
@@ -170,7 +170,7 @@ export default StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
@@ -179,7 +179,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   appointmentPet: {
     fontWeight: "700",
@@ -189,10 +189,12 @@ export default StyleSheet.create({
   appointmentType: {
     color: "#3498db",
     fontSize: 14,
+    marginTop: 2,
   },
   appointmentDate: {
     color: "#555",
     fontSize: 13,
+    marginTop: 2,
   },
   status: {
     fontWeight: "700",
@@ -203,113 +205,16 @@ export default StyleSheet.create({
     color: "#fff",
     textAlign: "center",
   },
-  statusCompleted: { backgroundColor: "#6bffabff" },
-  statusTreating: { backgroundColor: "#51b1ffff" },
-  statusWaiting: { backgroundColor: "#ff72d5ff" },
-  statusCancelled: { backgroundColor: "#ff7d74ff" },
+  statusCompleted: { backgroundColor: "#4caf50" },
+  statusTreating: { backgroundColor: "#2196f3" },
+  statusWaiting: { backgroundColor: "#ff9800" },
+  statusCancelled: { backgroundColor: "#f44336" },
 
-  /* Services */
-  servicesList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  serviceCard: {
-    width: "30%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    marginBottom: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  serviceLabel: {
-    fontSize: 13,
+  /* Titles */
+  servicesTitle: {
+    fontSize: 18,
     fontWeight: "700",
-    color: "#083e90",
-    textAlign: "center",
-    marginTop: 6,
-  },
-
-  /* Empty State */
-  emptyCardContainer: {
-    width: "100%",
-    backgroundColor: "#d0e4f9",
-    borderRadius: 16,
-    marginBottom: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  emptyCardText: {
-    fontSize: 16,
-    fontWeight: "600",
     color: "#2c3e50",
     marginBottom: 12,
-    textAlign: "center",
-  },
-  emptyCardButton: {
-    backgroundColor: "#3498db",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  emptyCardButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-
-  /* Modal */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-    textAlign: "center",
-    color: "#2c3e50",
-  },
-  modalLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: "#333",
-  },
-  cancelButton: {
-    backgroundColor: "#3498db",
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "#fff",
-    fontWeight: "700",
   },
 });

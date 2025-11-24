@@ -2,38 +2,57 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#EAF6FF" },
+  /* Container */
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#ecf7ffff",
+  },
+
+  /* Header */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#0d47a1" },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#2c3e50",
+  },
 
+  /* Pet Card */
   petCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
     alignItems: "center",
   },
   petImage: { width: 80, height: 80, borderRadius: 40, marginRight: 12 },
   petImagePlaceholder: {
-    backgroundColor: "#DFF0FF",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#d0e4f9",
     justifyContent: "center",
     alignItems: "center",
   },
 
   petInfoContainer: { flex: 1 },
-  petName: { fontSize: 18, fontWeight: "800", color: "#0d47a1" },
-  petInfo: { fontSize: 13, color: "#4a5568", marginTop: 4 },
+  petName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2c3e50",
+  },
+  petInfo: { fontSize: 14, color: "#4a5568", marginTop: 4 },
 
   actionButtons: { flexDirection: "row" },
   iconButton: {
@@ -45,9 +64,10 @@ export default StyleSheet.create({
 
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
+  /* Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
@@ -55,14 +75,19 @@ export default StyleSheet.create({
   modalContent: {
     width: "88%",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
-  // ------------------ Chi tiết thú cưng ------------------
+  /* Pet Detail */
   detailContent: {
     width: "90%",
-    backgroundColor: "#f7faff",
+    backgroundColor: "#eaf6ff",
     borderRadius: 20,
     padding: 20,
     alignItems: "center",
@@ -77,14 +102,14 @@ export default StyleSheet.create({
     height: 160,
     borderRadius: 80,
     marginBottom: 16,
-    backgroundColor: "#e0f0ff",
+    backgroundColor: "#d0e4f9",
     borderWidth: 2,
-    borderColor: "#007AFF",
+    borderColor: "#3498db",
   },
   detailTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#0d47a1",
+    color: "#2c3e50",
     marginBottom: 8,
     textAlign: "center",
   },
@@ -108,19 +133,19 @@ export default StyleSheet.create({
   },
   infoValue: {
     fontSize: 15,
-    color: "#0d47a1",
+    color: "#3498db",
     fontWeight: "700",
   },
 
   saveButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#3498db",
     padding: 14,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 16,
   },
   cancelButton: {
-    backgroundColor: "#E0E6EA",
+    backgroundColor: "#e0e6ea",
     padding: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -130,7 +155,7 @@ export default StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 10,
     marginBottom: 8,
     backgroundColor: "#fff",
@@ -143,12 +168,15 @@ export default StyleSheet.create({
     borderColor: "#cfe9ff",
     alignItems: "center",
     marginRight: 8,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "#fff",
   },
   genderButtonSelected: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#3498db",
+    borderColor: "#3498db",
+  },
+  genderButtonTextSelected: {
     color: "#fff",
+    fontWeight: "700",
   },
 });

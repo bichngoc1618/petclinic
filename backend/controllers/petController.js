@@ -1,6 +1,9 @@
 const Pet = require("../models/pet");
+const Appointment = require("../models/appointment");
+const Service = require("../models/service");
 const fs = require("fs");
 const path = require("path");
+exports.addPet = async (req, res) => {};
 
 // Thêm thú cưng
 exports.addPet = async (req, res) => {
@@ -111,6 +114,31 @@ exports.deletePet = async (req, res) => {
 
     await pet.deleteOne();
     res.status(200).json({ message: "Đã xoá thú cưng" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// ----- DANH SÁCH THÚ CƯNG ĐANG LƯU TRÚ -----
+exports.getBoardingPets = async (req, res) => {
+  try {
+    const boardingService = await Service.findOne({ name: "Lưu trú" });
+    if (!boardingService)
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy dịch vụ Lưu trú" });
+
+    const appointments = await Appointment.find({
+      services: boardingService._id,
+      status: { $in: ["pending", "treating", "staying"] },
+    })
+      .populate({ path: "pets", select: "name species owner image" })
+      .populate("owner", "name phone")
+      .populate("services", "name");
+
+    const boardingPets = appointments.flatMap((apm) => apm.pets);
+
+    res.status(200).json(boardingPets);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

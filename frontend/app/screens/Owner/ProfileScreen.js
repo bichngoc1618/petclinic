@@ -1,249 +1,409 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
+  Image,
+  Platform,
+  ActivityIndicator,
   ScrollView,
-  Modal,
   Alert,
-  StyleSheet,
+  Modal,
+  Animated,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { AuthContext } from "../../context/AuthContext";
+import axios from "axios";
 
+// === Floating Label Input ===
+function FloatingLabelInput({ label, value, onChangeText, ...props }) {
+  const [isFocused, setIsFocused] = useState(false);
+  const animatedIsFocused = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedIsFocused, {
+      toValue: isFocused || value ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, value]);
+
+  const labelStyle = {
+    position: "absolute",
+    left: 12,
+    color: "#3f51b5",
+    fontWeight: "500",
+    fontSize: animatedIsFocused.interpolate({
+      inputRange: [0, 1],
+      outputRange: [16, 12],
+    }),
+    top: animatedIsFocused.interpolate({
+      inputRange: [0, 1],
+      outputRange: [14, -6],
+    }),
+    backgroundColor: "#e3f2fd",
+    paddingHorizontal: 4,
+    zIndex: 1,
+  };
+
+  const borderColor = isFocused ? "#3f51b5" : "#90caf9";
+
+  return (
+    <View style={{ marginVertical: 10, position: "relative" }}>
+      <Animated.Text style={labelStyle}>{label}</Animated.Text>
+      <TextInput
+        style={{
+          height: 50,
+          fontSize: 16,
+          paddingHorizontal: 12,
+          paddingTop: 18,
+          paddingBottom: 6,
+          borderWidth: 1.5,
+          borderRadius: 12,
+          backgroundColor: "#e3f2fd",
+          color: "#1a237e",
+          borderColor,
+        }}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        {...props}
+      />
+    </View>
+  );
+}
+
+// === Profile Screen ===
 export default function ProfileScreen() {
+  const apiBase = "http://192.168.5.46:5000";
   const { user, setUser } = useContext(AuthContext);
-  const [editableUser, setEditableUser] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [updating, setUpdating] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
     address: "",
     avatar: "",
+    _webFile: null,
   });
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const SERVER = "http://192.168.5.46:5000";
-
+  // Load info khi mở màn hình
   useEffect(() => {
-    if (user) setEditableUser({ ...user });
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        avatar:
+          user.avatar?.startsWith("http") || !user.avatar
+            ? user.avatar || ""
+            : `${apiBase}${user.avatar}`,
+        _webFile: null,
+      });
+    }
   }, [user]);
-  if (!editableUser) return null;
 
-  const openModal = () => {
-    setFormData({
-      name: editableUser.name || "",
-      phone: editableUser.phone || "",
-      address: editableUser.address || "",
-      avatar: editableUser.avatar || "",
-    });
-    setModalVisible(true);
-  };
-
+  // Chọn ảnh
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
-    if (!result.canceled)
-      setFormData({ ...formData, avatar: result.assets[0].uri });
-  };
-
-  const handleSave = async () => {
-    if (!formData.name.trim()) return Alert.alert("Họ tên không được để trống");
-    if (!user || !user.token)
-      return Alert.alert("Không có token, vui lòng đăng nhập lại");
-
     try {
-      setUpdating(true);
-      const fd = new FormData();
-      fd.append("name", formData.name);
-      fd.append("phone", formData.phone || "");
-      fd.append("address", formData.address || "");
-      if (formData.avatar && !formData.avatar.startsWith("http")) {
-        const filename = formData.avatar.split("/").pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : "image";
-        fd.append("avatar", { uri: formData.avatar, name: filename, type });
+      if (Platform.OS === "web") {
+        fileInputRef.current.click();
+        return;
       }
-
-      const res = await axios.put(
-        `${SERVER}/api/users/${editableUser._id}`,
-        fd,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      setEditableUser(res.data);
-      setUser(res.data);
-      await AsyncStorage.setItem("user", JSON.stringify(res.data));
-      Alert.alert("Cập nhật thành công");
-      setModalVisible(false);
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Cập nhật thất bại");
-    } finally {
-      setUpdating(false);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets?.length > 0) {
+        setFormData({ ...formData, avatar: result.assets[0].uri });
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
     }
   };
 
+  const handleWebFile = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({
+        ...formData,
+        avatar: URL.createObjectURL(file),
+        _webFile: file,
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user?.token) return Alert.alert("Error", "User chưa sẵn sàng");
+    setLoading(true);
+    try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("email", formData.email);
+      data.append("phone", formData.phone);
+      data.append("address", formData.address);
+
+      if (Platform.OS === "web" && formData._webFile) {
+        data.append("avatar", formData._webFile);
+      } else if (formData.avatar && Platform.OS !== "web") {
+        if (!formData.avatar.startsWith("http")) {
+          const uriParts = formData.avatar.split(".");
+          const fileType = uriParts[uriParts.length - 1];
+          data.append("avatar", {
+            uri: formData.avatar,
+            name: `avatar.${fileType}`,
+            type: `image/${fileType}`,
+          });
+        }
+      }
+
+      const res = await axios.put(`${apiBase}/api/users/me`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+
+      const resData = res.data;
+      const updatedUser = {
+        ...user,
+        name: resData.name ?? user.name,
+        email: resData.email ?? user.email,
+        phone: resData.phone ?? user.phone,
+        address: resData.address ?? user.address,
+        avatar:
+          resData.avatar?.startsWith("http") || !resData.avatar
+            ? resData.avatar || user.avatar
+            : `${apiBase}${resData.avatar}`,
+      };
+
+      setUser({ ...updatedUser, token: user.token });
+      setFormData({
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        avatar: updatedUser.avatar,
+        _webFile: null,
+      });
+
+      Alert.alert("Thành công", "Thông tin đã được cập nhật!", [
+        { text: "OK", onPress: () => setModalVisible(false) },
+      ]);
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err.response?.data?.message || err.message || "Unknown error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderAvatar = () => {
+    if (!formData.avatar) {
+      const initial = formData.name
+        ? formData.name.charAt(0).toUpperCase()
+        : "?";
+      return (
+        <View
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            backgroundColor: "#3f51b5",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 10,
+          }}
+        >
+          <Text style={{ color: "#fff", fontSize: 40 }}>{initial}</Text>
+        </View>
+      );
+    }
+    return (
+      <Image
+        source={{ uri: formData.avatar }}
+        style={{
+          width: 160,
+          height: 160,
+          borderRadius: 50,
+          marginBottom: 10,
+        }}
+        onError={() => setFormData({ ...formData, avatar: "" })}
+      />
+    );
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.avatarContainer}>
-        {editableUser.avatar ? (
-          <Image source={{ uri: editableUser.avatar }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Text style={{ fontSize: 40 }}>👤</Text>
-          </View>
-        )}
-        <TouchableOpacity onPress={openModal}>
-          <Text style={styles.editAvatarText}>Chỉnh sửa profile</Text>
+    <ScrollView
+      contentContainerStyle={{
+        padding: 20,
+        backgroundColor: "#e3f2fd",
+      }}
+    >
+      {/* Nút chỉnh sửa ở góc phải trên màn hình */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-end",
+          marginBottom: 10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          style={{
+            padding: 8,
+            backgroundColor: "#5097e8ff",
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Chỉnh sửa</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Họ và tên</Text>
-        <Text style={styles.input}>{editableUser.name}</Text>
-      </View>
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Email</Text>
-        <Text style={styles.input}>{editableUser.email}</Text>
-      </View>
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Số điện thoại</Text>
-        <Text style={styles.input}>{editableUser.phone || "-"}</Text>
-      </View>
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Địa chỉ</Text>
-        <Text style={styles.input}>{editableUser.address || "-"}</Text>
-      </View>
+      {/* Thông tin user hiển thị giống form */}
+      <TouchableOpacity onPress={pickImage} style={{ alignSelf: "center" }}>
+        {renderAvatar()}
+      </TouchableOpacity>
+      {Platform.OS === "web" && (
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleWebFile}
+          style={{ display: "none" }}
+        />
+      )}
 
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView>
-              <View style={{ alignItems: "center", marginBottom: 20 }}>
-                {formData.avatar ? (
-                  <Image
-                    source={{ uri: formData.avatar }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                    <Text style={{ fontSize: 40 }}>👤</Text>
-                  </View>
-                )}
-                <TouchableOpacity onPress={pickImage}>
-                  <Text style={styles.editAvatarText}>Thay đổi ảnh</Text>
-                </TouchableOpacity>
-              </View>
+      <FloatingLabelInput
+        label="Tên"
+        value={formData.name}
+        onChangeText={(text) => setFormData({ ...formData, name: text })}
+      />
+      <FloatingLabelInput
+        label="Email"
+        value={formData.email}
+        keyboardType="email-address"
+        onChangeText={(text) => setFormData({ ...formData, email: text })}
+      />
+      <FloatingLabelInput
+        label="Số điện thoại"
+        value={formData.phone}
+        keyboardType="phone-pad"
+        onChangeText={(text) => setFormData({ ...formData, phone: text })}
+      />
+      <FloatingLabelInput
+        label="Địa chỉ"
+        value={formData.address}
+        onChangeText={(text) => setFormData({ ...formData, address: text })}
+      />
 
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Họ và tên</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, name: text })
-                  }
-                />
-              </View>
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Số điện thoại</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.phone}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, phone: text })
-                  }
-                  keyboardType="phone-pad"
-                />
-              </View>
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Địa chỉ</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.address}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, address: text })
-                  }
-                />
-              </View>
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color="#007AFF"
+          style={{ marginVertical: 15 }}
+        />
+      )}
 
-              <View style={{ flexDirection: "row", marginTop: 20 }}>
-                <TouchableOpacity
-                  style={[styles.saveButton, { flex: 1, marginRight: 8 }]}
-                  onPress={handleSave}
-                  disabled={updating}
-                >
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontWeight: "700",
-                      textAlign: "center",
-                    }}
-                  >
-                    {updating ? "Đang lưu..." : "Lưu"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.cancelButton, { flex: 1 }]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={{ fontWeight: "700", textAlign: "center" }}>
-                    Hủy
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+      {/* Modal chỉnh sửa ảnh và thông tin */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#e3f2fd",
+              padding: 20,
+              borderRadius: 16,
+              maxHeight: "85%",
+            }}
+          >
+            <TouchableOpacity
+              onPress={pickImage}
+              style={{ alignSelf: "center", marginBottom: 15 }}
+            >
+              {renderAvatar()}
+            </TouchableOpacity>
+
+            <FloatingLabelInput
+              label="Tên"
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+            />
+            <FloatingLabelInput
+              label="Email"
+              value={formData.email}
+              keyboardType="email-address"
+              onChangeText={(text) => setFormData({ ...formData, email: text })}
+            />
+            <FloatingLabelInput
+              label="Số điện thoại"
+              value={formData.phone}
+              keyboardType="phone-pad"
+              onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            />
+            <FloatingLabelInput
+              label="Địa chỉ"
+              value={formData.address}
+              onChangeText={(text) =>
+                setFormData({ ...formData, address: text })
+              }
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 15,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={{
+                  flex: 1,
+                  marginRight: 10,
+                  padding: 12,
+                  backgroundColor: "#b0bec5",
+                  borderRadius: 10,
+                  alignItems: "center",
+                }}
+                disabled={loading}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleSave}
+                style={{
+                  flex: 1,
+                  marginLeft: 10,
+                  padding: 12,
+                  backgroundColor: "#3f51b5",
+                  borderRadius: 10,
+                  alignItems: "center",
+                }}
+                disabled={loading}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f8ff", padding: 16 },
-  avatarContainer: { alignItems: "center", marginBottom: 20 },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  avatarPlaceholder: {
-    backgroundColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  editAvatarText: { color: "#3498db", marginTop: 8, fontWeight: "600" },
-  fieldContainer: { marginBottom: 12 },
-  label: { fontWeight: "600", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-  },
-  saveButton: { backgroundColor: "#3498db", padding: 12, borderRadius: 8 },
-  cancelButton: { backgroundColor: "#eee", padding: 12, borderRadius: 8 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-  },
-});

@@ -82,28 +82,34 @@ export default StyleSheet.create({
     fontSize: 14,
   },
 
-  modalOverlay: {
+  // Modal overlay
+  overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.55)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    width: "90%",
     padding: 20,
+  },
+
+  // Modal popup
+  popup: {
+    backgroundColor: "#E6F7FF",
+    borderRadius: 16,
+    padding: 20,
+    width: "90%",
+    maxHeight: "85%",
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 5,
   },
-  modalTitle: {
-    fontSize: 22,
+
+  title: {
+    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     color: "#4A90E2",
   },
   modalLabel: {
@@ -111,10 +117,13 @@ export default StyleSheet.create({
     marginTop: 10,
     color: "#333",
   },
-  cancelButton: {
+
+  // Buttons trong modal
+  cancelBtn: {
     backgroundColor: "#ccc",
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
 });

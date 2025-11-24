@@ -1,3 +1,4 @@
+// routes/auth.js
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
@@ -19,7 +20,12 @@ const upload = multer({ storage });
 // Routes
 router.post("/register", register);
 router.post("/login", login);
-router.get("/me", authMiddleware(), getMe); // Lấy user hiện tại
-router.put("/:id", authMiddleware(), upload.single("avatar"), updateUser); // Cập nhật profile
+router.get("/me", authMiddleware(), getMe);
+router.put(
+  "/me",
+  authMiddleware(),
+  upload.single("avatar"), // avatar là tên trường formData từ frontend
+  updateUser // SỬA: gọi trực tiếp updateUser từ authController
+);
 
 module.exports = router;
