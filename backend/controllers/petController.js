@@ -144,3 +144,16 @@ exports.getBoardingPets = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// ----- THỐNG KÊ: TỔNG SỐ THÚ CƯNG -----
+exports.getTotalPets = async (req, res) => {
+  try {
+    const total = await Pet.countDocuments();
+
+    res.status(200).json({
+      totalPets: total,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

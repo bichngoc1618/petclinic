@@ -4,13 +4,17 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const petCtrl = require("../controllers/petController");
 const appointmentCtrl = require("../controllers/appointmentController");
+const serviceCtrl = require("../controllers/serviceController");
 const userCtrl = require("../controllers/authController");
+const paymentCtrl = require("../controllers/paymentController");
 
 // Middleware chỉ admin
 router.use(authMiddleware(["admin"]));
 
 /* ===================== PETS ===================== */
 router.get("/pets", petCtrl.getAllPets);
+router.get("/pets/owner/:ownerId", petCtrl.getPetsByOwner);
+router.get("/pets/:id", petCtrl.getPetById);
 router.get("/boarding-pets", petCtrl.getBoardingPets);
 router.post("/pets", petCtrl.addPet);
 router.put("/pets/:id", petCtrl.updatePet);
@@ -26,20 +30,20 @@ router.post("/appointments", appointmentCtrl.createAppointment);
 router.put("/appointments/:id/assign-doctor", appointmentCtrl.assignDoctor);
 router.put("/appointments/:id/cancel", appointmentCtrl.cancelAppointment);
 
+// Thống kê lịch hẹn
+router.get("/appointments/total", appointmentCtrl.getTotalAppointments);
+router.get("/appointments/monthly", appointmentCtrl.getMonthlyAppointments);
+
+/* ===================== SERVICES ===================== */
+router.get("/services", serviceCtrl.getAllServices);
+router.post("/services", serviceCtrl.createService);
+router.get("/services/total-used", serviceCtrl.getTotalServicesUsed);
+
 /* ===================== USERS ===================== */
-// Lấy tất cả users theo role (doctor | owner)
 router.get("/users", userCtrl.getUsersByRole);
-
-// Lấy tất cả users + pets + appointments (admin dashboard)
 router.get("/users/all", userCtrl.getAllUsers);
-
-// Xem chi tiết user
 router.get("/users/:id", userCtrl.getUserDetail);
-
-// Tìm kiếm user theo name hoặc email
 router.get("/users/search", userCtrl.searchUsers);
-
-// Lấy số lượng users theo role (admin dashboard)
 router.get("/users/counts", async (req, res) => {
   try {
     const doctorsCount = await userCtrl.getUserCountsForDashboard("doctor");
@@ -50,11 +54,10 @@ router.get("/users/counts", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-// Đổi role
 router.put("/users/:id/role", userCtrl.changeUserRole);
-
-// Xóa user
 router.delete("/users/:id", userCtrl.deleteUser);
+router.get("/payments/monthly", paymentCtrl.getMonthlyRevenue);
+
+router.get("/payments/total", paymentCtrl.getTotalRevenue);
 
 module.exports = router;

@@ -1,165 +1,246 @@
-// screens/Admin/HomeAdmin.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
-  FlatList,
+  ScrollView,
   ActivityIndicator,
-  Modal,
+  Dimensions,
+  Platform,
+  Pressable,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { LineChart, BarChart, PieChart } from "react-native-chart-kit";
 import axiosClient from "../../api/axiosClient";
-import styles from "../../styles/HomeOwner"; // dùng lại style cũ
+import { AuthContext } from "../../context/AuthContext";
+import stylesBase from "../../styles/statisticsStyle";
 
-export default function HomeAdmin({ navigation }) {
-  const [owners, setOwners] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const [appointments, setAppointments] = useState([]);
+const screenWidth = Dimensions.get("window").width;
+
+export default function StatisticsScreen() {
+  const { user, initializing } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [stats, setStats] = useState({
+    totalAppointments: 0,
+    totalPets: 0,
+    totalRevenue: 0,
+    totalServicesUsed: 0,
+    totalServicesProvided: 0,
+    appointmentsByMonth: { labels: [], values: [] },
+    revenueByMonth: { labels: [], values: [] },
+    serviceRatio: [],
+  });
+  const [error, setError] = useState(null);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (!initializing && user?.token) {
+      loadStats();
+    }
+  }, [initializing, user?.token]);
+
+  const loadStats = async () => {
+    if (!user?.token) return;
+
+    setLoading(true);
+    setError(null);
+
+    const config = { headers: { Authorization: `Bearer ${user.token}` } };
+
+    const apis = [
+      { key: "totalAppointments", url: "/api/admin/appointments/total" },
+      { key: "appointmentsByMonth", url: "/api/admin/appointments/monthly" },
+      { key: "servicesUsed", url: "/api/admin/services/total-used" },
+      { key: "totalServicesProvided", url: "/api/admin/services" },
+      { key: "totalPets", url: "/api/admin/pets" },
+      { key: "revenueByMonth", url: "/api/admin/payments/monthly" },
+    ];
+
+    const responses = {};
+
     try {
-      setLoading(true);
-      const [ownerRes, doctorRes, apmRes] = await Promise.all([
-        axiosClient.get("/api/users?role=owner"),
-        axiosClient.get("/api/users?role=doctor"),
-        axiosClient.get("/api/appointments"),
-      ]);
+      for (const api of apis) {
+        try {
+          const res = await axiosClient.get(api.url, config);
+          responses[api.key] = res.data;
+        } catch (err) {
+          console.error(`❌ ${api.key} fetch failed:`, err.message);
+          responses[api.key] = null;
+        }
+      }
 
-      setOwners(ownerRes.data?.data || []);
-      setDoctors(doctorRes.data?.data || []);
-      setAppointments(apmRes.data?.data || []);
+      // Tổng lịch hẹn
+      const totalAppointments =
+        responses.totalAppointments?.totalAppointments || 0;
+
+      // Tổng thú cưng
+      const totalPets = Array.isArray(responses.totalPets)
+        ? responses.totalPets.length
+        : 0;
+
+      // Tổng dịch vụ cung cấp
+      const totalServicesProvided = Array.isArray(
+        responses.totalServicesProvided
+      )
+        ? responses.totalServicesProvided.length
+        : 0;
+
+      // Dịch vụ đã sử dụng
+      const servicesUsedArray = Array.isArray(responses.servicesUsed)
+        ? responses.servicesUsed
+        : Array.isArray(responses.servicesUsed?.servicesUsed)
+        ? responses.servicesUsed.servicesUsed
+        : [];
+      const serviceRatio = servicesUsedArray.map((s, index) => ({
+        name: s.name || "Unknown",
+        value: s.totalUsed || 0,
+        color: ["#FF6384", "#36A2EB", "#FFCE56", "#8BC34A", "#FF9800"][
+          index % 5
+        ],
+      }));
+
+      // Lịch hẹn theo tháng
+      const appointmentsByMonthArray = Array.isArray(
+        responses.appointmentsByMonth
+      )
+        ? responses.appointmentsByMonth
+        : [];
+      const appointmentsByMonth = {
+        labels: appointmentsByMonthArray.map(
+          (item) => `${item.month}/${item.year}`
+        ),
+        values: appointmentsByMonthArray.map(
+          (item) => item.totalAppointments || 0
+        ),
+      };
+
+      // Doanh thu theo tháng
+      const revenueByMonthArray = Array.isArray(responses.revenueByMonth)
+        ? responses.revenueByMonth
+        : [];
+      const revenueByMonth = {
+        labels: revenueByMonthArray.map((item) => `${item.month}/${item.year}`),
+        values: revenueByMonthArray.map((item) => item.revenue || 0),
+      };
+      const totalRevenue = revenueByMonth.values.reduce(
+        (sum, val) => sum + val,
+        0
+      );
+
+      setStats({
+        totalAppointments,
+        totalPets,
+        totalRevenue,
+        totalServicesUsed: serviceRatio.reduce((sum, s) => sum + s.value, 0),
+        totalServicesProvided,
+        appointmentsByMonth,
+        revenueByMonth,
+        serviceRatio,
+      });
     } catch (err) {
-      console.log("Fetch error:", err.response?.data || err.message);
+      console.error("❌ Load stats general error:", err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const renderHeader = () => (
-    <>
-      <Text style={styles.servicesTitle}>Thống kê nhanh</Text>
-      <View style={styles.stats}>
-        <View style={styles.card}>
-          <Ionicons name="people-outline" style={styles.cardIcon} />
-          <Text style={styles.cardNumber}>{owners.length}</Text>
-          <Text style={styles.cardLabel}>Owner</Text>
-        </View>
-        <View style={styles.card}>
-          <Ionicons name="medkit-outline" style={styles.cardIcon} />
-          <Text style={styles.cardNumber}>{doctors.length}</Text>
-          <Text style={styles.cardLabel}>Doctor</Text>
-        </View>
-        <View style={styles.card}>
-          <Ionicons name="calendar-outline" style={styles.cardIcon} />
-          <Text style={styles.cardNumber}>{appointments.length}</Text>
-          <Text style={styles.cardLabel}>Lịch hẹn</Text>
-        </View>
-        <View style={styles.card}>
-          <Ionicons name="list-outline" style={styles.cardIcon} />
-          <Text style={styles.cardNumber}>
-            {appointments.filter((a) => !a.assignedDoctor).length}
-          </Text>
-          <Text style={styles.cardLabel}>Task chưa giao</Text>
-        </View>
-      </View>
-    </>
-  );
-
-  const renderAppointmentItem = ({ item }) => {
-    const appointmentDate = new Date(item.date);
-    const formattedDate = appointmentDate.toLocaleDateString("vi-VN");
-    const formattedTime = appointmentDate.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
+  if (loading || initializing || !user) {
     return (
-      <TouchableOpacity
-        style={styles.appointmentCard}
-        onPress={() => setSelectedAppointment(item)}
-      >
-        <View style={styles.appointmentRow}>
-          <Text style={styles.appointmentPet}>
-            {item.owner?.name || "Owner"}
-          </Text>
-          <Text style={[styles.status, { backgroundColor: "#3498db" }]}>
-            {item.assignedDoctor ? "Đã giao" : "Chưa giao"}
-          </Text>
-        </View>
-        <Text style={styles.appointmentType}>
-          Dịch vụ: {(item.services ?? []).map((s) => s.name).join(", ")}
-        </Text>
-        <Text style={styles.appointmentDate}>
-          Ngày: {formattedDate} | Giờ: {formattedTime}
-        </Text>
-      </TouchableOpacity>
+      <View style={stylesBase.loadingContainer}>
+        <ActivityIndicator size="large" color="#1a237e" />
+        <Text>Đang tải dữ liệu...</Text>
+      </View>
     );
-  };
+  }
 
   return (
-    <View style={{ flex: 1, padding: 12 }}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#3498db" />
-      ) : (
-        <FlatList
-          data={appointments.slice(0, 5)}
-          keyExtractor={(item) => item._id}
-          ListHeaderComponent={renderHeader}
-          renderItem={renderAppointmentItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        />
+    <ScrollView
+      style={stylesBase.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {error && (
+        <View style={stylesBase.errorBox}>
+          <Text style={stylesBase.errorText}>Lỗi khi tải dữ liệu: {error}</Text>
+        </View>
       )}
 
-      {/* DETAIL MODAL */}
-      <Modal visible={!!selectedAppointment} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Chi tiết lịch hẹn</Text>
-            {selectedAppointment && (
-              <>
-                <Text style={styles.modalLabel}>
-                  📅 Ngày giờ:{" "}
-                  {new Date(selectedAppointment.date).toLocaleString()}
-                </Text>
-                <Text style={styles.modalLabel}>
-                  🐶 Owner: {selectedAppointment.owner?.name}
-                </Text>
-                <Text style={styles.modalLabel}>
-                  🧰 Dịch vụ:{" "}
-                  {(selectedAppointment.services ?? [])
-                    .map((s) => s.name)
-                    .join(", ")}
-                </Text>
-                <Text style={styles.modalLabel}>
-                  🔖 Trạng thái:{" "}
-                  {selectedAppointment.assignedDoctor ? "Đã giao" : "Chưa giao"}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.cancelButton, { marginTop: 20 }]}
-                  onPress={() => setSelectedAppointment(null)}
-                >
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontWeight: "700",
-                      textAlign: "center",
-                    }}
-                  >
-                    Đóng
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-    </View>
+      {/* SUMMARY CARDS */}
+      <View style={stylesBase.cardRow}>
+        <Pressable style={stylesBase.card}>
+          <Text style={stylesBase.cardLabel}>Tổng lịch hẹn</Text>
+          <Text style={stylesBase.cardValue}>{stats.totalAppointments}</Text>
+        </Pressable>
+        <Pressable style={stylesBase.card}>
+          <Text style={stylesBase.cardLabel}>Tổng thú cưng</Text>
+          <Text style={stylesBase.cardValue}>{stats.totalPets}</Text>
+        </Pressable>
+      </View>
+
+      <View style={stylesBase.cardRow}>
+        <Pressable style={stylesBase.card}>
+          <Text style={stylesBase.cardLabel}>Tổng doanh thu</Text>
+          <Text style={stylesBase.cardValue}>{stats.totalRevenue}k</Text>
+        </Pressable>
+        <Pressable style={stylesBase.card}>
+          <Text style={stylesBase.cardLabel}>Dịch vụ cung cấp</Text>
+          <Text style={stylesBase.cardValue}>
+            {stats.totalServicesProvided}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* BAR CHART */}
+      {stats.appointmentsByMonth.values.length > 0 && (
+        <>
+          <Text style={stylesBase.chartTitle}>Lịch hẹn theo tháng</Text>
+          <BarChart
+            data={{
+              labels: stats.appointmentsByMonth.labels,
+              datasets: [{ data: stats.appointmentsByMonth.values }],
+            }}
+            width={screenWidth - 20}
+            height={220}
+            chartConfig={stylesBase.chartConfig}
+            style={stylesBase.chart}
+          />
+        </>
+      )}
+
+      {/* LINE CHART */}
+      {stats.revenueByMonth.values.length > 0 && (
+        <>
+          <Text style={stylesBase.chartTitle}>Doanh thu theo tháng</Text>
+          <LineChart
+            data={{
+              labels: stats.revenueByMonth.labels,
+              datasets: [{ data: stats.revenueByMonth.values }],
+            }}
+            width={screenWidth - 20}
+            height={240}
+            chartConfig={stylesBase.chartConfig}
+            style={stylesBase.chart}
+          />
+        </>
+      )}
+
+      {/* PIE CHART */}
+      {stats.serviceRatio.length > 0 && (
+        <>
+          <Text style={stylesBase.chartTitle}>Tỷ lệ dịch vụ đã sử dụng</Text>
+          <PieChart
+            data={stats.serviceRatio.map((s) => ({
+              name: s.name,
+              population: s.value,
+              color: s.color,
+              legendFontColor: "#000",
+              legendFontSize: 14,
+            }))}
+            width={screenWidth}
+            height={240}
+            chartConfig={stylesBase.chartConfig}
+            accessor={"population"}
+            paddingLeft={"15"}
+          />
+        </>
+      )}
+    </ScrollView>
   );
 }

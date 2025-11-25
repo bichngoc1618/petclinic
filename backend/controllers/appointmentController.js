@@ -127,3 +127,39 @@ exports.assignDoctor = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+// 📊 Lịch hẹn theo tháng
+exports.getMonthlyAppointments = async (req, res) => {
+  try {
+    const result = await Appointment.aggregate([
+      {
+        $group: {
+          _id: { year: { $year: "$date" }, month: { $month: "$date" } },
+          totalAppointments: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    // Định dạng kết quả
+    const formatted = result.map((item) => ({
+      year: item._id.year,
+      month: item._id.month,
+      totalAppointments: item.totalAppointments,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error("❌ Lỗi thống kê lịch hẹn theo tháng:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+// Tổng số lịch hẹn
+exports.getTotalAppointments = async (req, res) => {
+  try {
+    const total = await Appointment.countDocuments();
+    res.json({ totalAppointments: total });
+  } catch (error) {
+    console.error("Lỗi tổng số lịch hẹn:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

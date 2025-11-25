@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 // Screens
 import HomeAdmin from "../screens/Admin/HomeAdmin";
 import UsersManagement from "../screens/Admin/UsersManagement";
-import DoctorsManagement from "../screens/Admin/DoctorsManagement";
+
 import StatsScreen from "../screens/Admin/StatsScreen";
 import AppointmentsManagement from "../screens/Admin/AppointmentsManagement";
 import DoctorViewScreen from "../screens/Admin/DoctorViewScreen";
@@ -36,7 +36,7 @@ export default function AdminDrawerNavigator() {
       })}
     >
       <Drawer.Screen
-        name="HomeAdmin"
+        name="Trang chủ"
         component={HomeAdmin}
         options={{
           drawerLabel: "Trang chủ",
@@ -47,7 +47,7 @@ export default function AdminDrawerNavigator() {
       />
 
       <Drawer.Screen
-        name="UsersManagement"
+        name="Quản lý người dùng"
         component={UsersManagement}
         options={{
           drawerLabel: "Quản lý người dùng",
@@ -58,18 +58,7 @@ export default function AdminDrawerNavigator() {
       />
 
       <Drawer.Screen
-        name="DoctorsManagement"
-        component={DoctorsManagement}
-        options={{
-          drawerLabel: "Quản lý bác sĩ",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="medkit-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Drawer.Screen
-        name="StatsScreen"
+        name="Thống kê"
         component={StatsScreen}
         options={{
           drawerLabel: "Xem thống kê",
